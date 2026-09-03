@@ -3,6 +3,7 @@ import type { GameState } from "../engine/GameState";
 import { classifyCombo, getComboStake } from "../rules/combo";
 import { COMBO_TIER } from "../rules/ruleConfig";
 import { getRankPower } from "../rules/ranks";
+import { playerAggressiveness } from "./learnFromPlayer";
 
 type Hand = GameState["players"][number]["hand"];
 type ComboType = keyof typeof COMBO_TIER;
@@ -81,6 +82,8 @@ function teammatePassed(state: GameState, seat: number): boolean {
  * 2. 开局阶段——手牌 >= 14 张(开局/前中期)时惩罚 ×1.5:略倾向留大招但能压就压,
  *    手牌 <= 6 张(收尾)时惩罚 ×0.6:该出手就出手;
  * 3. 队友状态——队友尚未 PASS(+300):队友可能还能接,自己先别抢大招。
+ * 4. 玩家风格——学习玩家历史操作得出激进指数(0~1):玩家越激进,AI 惩罚越轻、出手越果断;
+ *    指数 0.5 为中性(不加不减),0 时惩罚 ×1.5,1 时惩罚 ×0.4。
  * 敌方已出炸弹级牌(stake > 10)时不罚:敌大招我方必须跟上,否则跑分。
  * 紧急时刻(敌方剩牌 <= 2)全部豁免。
  */
@@ -102,6 +105,8 @@ function wastePenalty(comboType: ComboType, state: GameState, seat: number, urge
   if (handSize >= 14) penalty = Math.round(penalty * 1.5);
   else if (handSize <= 6) penalty = Math.round(penalty * 0.6);
   if (!teammatePassed(state, seat)) penalty += 300;
+  // 模仿玩家激进程度:激进玩家带出来的 AI 更敢打,保守玩家带出来的 AI 更能忍
+  penalty = Math.round(penalty * (1.5 - playerAggressiveness()));
   return penalty;
 }
 

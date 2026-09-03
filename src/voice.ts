@@ -72,3 +72,8 @@ export function speakBeatOrCombo(combo: Combo): void {
   if (Math.random() < 0.5) speakBeat();
   else speakCombo(combo);
 }
+
+/** 报警:有玩家只剩 1~2 张牌了 */
+export function speakLowCards(count: number): void {
+  speak(count === 1 ? "只剩一张牌了" : "只剩两张牌了", 1.1);
+}

@@ -3,8 +3,10 @@ import { GameEngine } from "../engine/GameEngine";
 import { playAI, hintCardIds } from "../ai/GreedyAI";
 import type { Card, PlayableRank } from "../rules/cards";
 import { classifyCombo } from "../rules/combo";
-import { speakCombo, speakPass, speakBeatOrCombo, isMuted, setMuted } from "../voice";
+import { speakCombo, speakPass, speakBeatOrCombo, speakLowCards, isMuted, setMuted } from "../voice";
 import { randomProfiles, type PlayerProfile } from "./profiles";
+import { recordPlayerBeat, recordPlayerBigPlay } from "../ai/learnFromPlayer";
+import { getComboStake } from "../rules/combo";
 
 const engine = new GameEngine();
 const PRIORITY_RANKS: readonly PlayableRank[] = ["3", "7", "8", "Q"];
@@ -125,6 +127,23 @@ export default function GameTable() {
     return () => clearTimeout(timer);
   }, [state.currentCombo, state.comboOwnerSeat]);
 
+  // 报警语音:某玩家只剩 1~2 张牌时提醒(每局每座位只报一次)
+  const warnedLow = useRef<Set<number>>(new Set());
+  const warnedHand = useRef(-1);
+  useEffect(() => {
+    if (state.phase !== "PLAYING") return;
+    if (warnedHand.current !== state.handNumber) {
+      warnedHand.current = state.handNumber;
+      warnedLow.current.clear();
+    }
+    for (const player of state.players) {
+      if (player.hand.length !== 1 && player.hand.length !== 2) continue;
+      if (warnedLow.current.has(player.seat)) continue;
+      warnedLow.current.add(player.seat);
+      speakLowCards(player.hand.length);
+    }
+  }, [state.phase, state.players, state.handNumber]);
+
   const groups = useMemo(() => {
     const ordered = [...human.hand].sort((a, b) => RANK_ORDER.indexOf(b.rank as PlayableRank) - RANK_ORDER.indexOf(a.rank as PlayableRank));
     const grouped = (ranks: readonly PlayableRank[]) => ranks.map((rank) => ({ rank, cards: ordered.filter((card) => card.rank === rank) })).filter((group) => group.cards.length > 0);
@@ -140,11 +159,20 @@ export default function GameTable() {
     const combo = classifyCombo(cards);
     const beating = state.currentCombo !== null;
     if (perform(() => engine.playCards(0, selected)) && combo.type !== "INVALID") {
+      // 学习信号:玩家压牌选择 + 大招出手时机
+      if (beating && state.currentCombo) recordPlayerBeat(getComboStake(state.currentCombo), true);
+      const isBig = combo.type === "BOMB_WITH_PAIR" || combo.type === "HYDROGEN_BOMB" || combo.type === "Q873_MIXED" || combo.type === "Q873_SUITED";
+      if (isBig) recordPlayerBigPlay(human.hand.length);
       if (beating) speakBeatOrCombo(combo);
       else speakCombo(combo);
     }
   };
-  const passHuman = () => { if (perform(() => engine.pass(0))) speakPass(); };
+  const passHuman = () => {
+    if (perform(() => engine.pass(0))) {
+      if (state.currentCombo) recordPlayerBeat(getComboStake(state.currentCombo), false);
+      speakPass();
+    }
+  };
   const useLuck = () => { if (perform(() => engine.useLuckCard(0))) setCountdown(3); };
   const showHint = () => {
     const ids = hintCardIds(engine, 0);
@@ -188,7 +216,7 @@ export default function GameTable() {
             <span>{FX_TEXT[fx.kind]}</span>
           </div>
         )}
-        <div className="seats">{state.players.map((player) => { const profile = profiles[player.seat]!; return <div className={`seat seat-${player.seat} ${state.currentTurn === player.seat ? "active" : ""} ${revealing && player.hand.length > 0 ? "revealing" : ""}`} key={player.seat}><div className="avatar"><img src={profile.avatar} alt={profile.name} /><i className="seat-badge">{player.seat}</i></div><div className="seat-info"><b>{profile.name}{player.controller === "HUMAN" ? "（你）" : ""}</b><span>{player.controller === "HUMAN" ? "你" : "AI"} · {player.hand.length} 张</span></div>{revealing && player.hand.length > 0 && <div className="reveal-cards">{player.hand.map((card) => <span className="mini-card" key={card.id}><CardFace card={card} /></span>)}</div>}</div>; })}</div>
+        <div className="seats">{state.players.map((player) => { const profile = profiles[player.seat]!; const hoverable = revealing && player.controller !== "HUMAN" && player.hand.length > 0; return <div className={`seat seat-${player.seat} ${state.currentTurn === player.seat ? "active" : ""} ${revealing && player.hand.length > 0 ? "revealing" : ""}`} key={player.seat}><div className="avatar hover-reveal"><img src={profile.avatar} alt={profile.name} /><i className="seat-badge">{player.seat}</i></div><div className="seat-info"><b>{profile.name}{player.controller === "HUMAN" ? "（你）" : ""}</b><span>{player.controller === "HUMAN" ? "你" : "AI"} · {player.hand.length} 张</span></div>{revealing && player.hand.length > 0 && <div className="reveal-cards">{player.hand.map((card) => <span className="mini-card" key={card.id}><CardFace card={card} /></span>)}</div>}{hoverable && <div className="hover-cards">{player.hand.map((card) => <span className="mini-card" key={card.id}><CardFace card={card} /></span>)}</div>}</div>; })}</div>
       </section>
       <section className="hand">
         <div className="hand-title"><span>你的手牌</span><span>{human.hand.length} 张</span></div>

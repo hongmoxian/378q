@@ -79,6 +79,10 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .countdown-overlay .count-num { font-size: 104px; font-weight: 900; color: #f2c667; text-shadow: 0 0 34px #b45309, 0 0 90px #f2c66766; animation: count-pop 1s ease-out both; }
 .countdown-overlay small { position: absolute; bottom: 24%; color: #cbd5e1; font-size: 13px; letter-spacing: 1px; }
 .seat.revealing { box-shadow: 0 0 0 2px #f2c667, 0 0 22px #f2c66755; }
+.seat { position: relative; }
+.hover-cards { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); z-index: 20; display: flex; flex-wrap: wrap; gap: 4px; max-width: 320px; padding: 8px; border: 1px solid #f2c66788; border-radius: 8px; background: #0d1f26f2; box-shadow: 0 10px 26px #000a; opacity: 0; pointer-events: none; transition: opacity .15s; }
+.hover-reveal:hover + .seat-info + .reveal-cards ~ .hover-cards, .seat:hover .hover-cards { opacity: 1; }
+.seat:hover .hover-cards { display: flex; }
 .reveal-cards { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; max-width: 230px; justify-content: center; }
 .reveal-cards .mini-card { font-size: 10px; padding: 2px 5px; animation: card-in .35s both; }
 @media (max-width: 700px) { main { padding: 16px; } .sub { display: block; margin: 4px 0 0; font-size: 12px; } .score { gap: 8px; flex-wrap: wrap; } .score > div { min-width: 0; } .round { order: 3; width: 100%; } .table { min-height: 330px; } .hand-groups { grid-template-columns: 1fr; gap: 10px; } .card { width: 53px; min-width: 53px; height: 71px; } .seat-info span { display: none; } }
