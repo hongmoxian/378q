@@ -221,6 +221,10 @@ export default function GameTable() {
   const restart = () => { engine.startNewMatch(); setSelected([]); setProfiles(randomProfiles()); refresh((value) => value + 1); };
   const toggleMute = () => { const next = !muted; setMuted(next); setMutedState(next); };
   const currentCards = state.currentCombo?.cards ?? [];
+  const comboName: Record<string, string> = { SINGLE: "单张", PAIR: "对子", BOMB_WITH_PAIR: "炸弹", HYDROGEN_BOMB: "氢弹", Q873_MIXED: "378Q", Q873_SUITED: "顺378Q" };
+  const formatLog = (log: string) => log
+    .replace(/P(\d)/g, (_, d: string) => { const seat = Number(d) as 0 | 1 | 2 | 3; const profile = profiles[seat]!; return profile.name + (seat === 0 ? "(你)" : ""); })
+    .replace(/\b(SINGLE|PAIR|BOMB_WITH_PAIR|HYDROGEN_BOMB|Q873_MIXED|Q873_SUITED)\b/g, (type) => comboName[type] ?? type);
   const settled = state.phase === "HAND_FINISHED" || state.phase === "MATCH_FINISHED";
   const redDelta = state.teamScores.RED - state.handStartScores.RED;
   const blueDelta = state.teamScores.BLUE - state.handStartScores.BLUE;
@@ -279,7 +283,7 @@ export default function GameTable() {
         </div>
         <div className="actions"><button className="primary" disabled={countdown !== null || state.currentTurn !== 0 || selected.length === 0 || state.phase !== "PLAYING"} onClick={playHuman}>出牌</button><button disabled={countdown !== null || state.currentTurn !== 0 || !state.currentCombo || state.phase !== "PLAYING"} onClick={passHuman}>不管</button><button disabled={countdown !== null || state.currentTurn !== 0 || state.phase !== "PLAYING"} onClick={showHint}>💡 提示</button><button className={peek ? "primary" : ""} onClick={() => setPeek((value) => !value)}>{peek ? "👁 收起队友牌" : "👁 看队友牌"}</button>{state.phase === "PLAYING" && state.handNumber > 1 && state.luckCardUses > 0 && state.currentCombo === null && state.comboOwnerSeat === null && state.consecutivePasses === 0 && <button onClick={useLuck}>🎴 手气卡 ×{state.luckCardUses}</button>}{state.phase === "HAND_FINISHED" && <button disabled={revealing} onClick={() => perform(() => engine.startNextHand())}>{revealing ? "亮牌中…" : "下一小局"}</button>}{state.phase === "MATCH_FINISHED" && <strong className="winner">大局结束：{state.winnerTeam === "RED" ? "红队" : "蓝队"}获胜</strong>}</div>
       </section>
-      <section className="logs">{state.logs.slice(-8).map((log, index) => <div key={`${index}-${log}`}>{log}</div>)}</section>
+      <section className="logs">{state.logs.slice(-8).map((log, index) => <div key={`${index}-${log}`}>{formatLog(log)}</div>)}</section>
     </main>
   );
 }

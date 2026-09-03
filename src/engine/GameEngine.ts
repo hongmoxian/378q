@@ -1,5 +1,5 @@
 import { buildFullDeck, buildPlayableDeck, shuffle } from "../rules/deck";
-import type { Card, PlayableRank, Team } from "../rules/cards";
+import { cardLabel, type Card, type PlayableRank, type Team } from "../rules/cards";
 import { classifyCombo, canBeat, canLead, getComboStake, type Combo } from "../rules/combo";
 import { scoreCards, transferScore } from "../rules/scoring";
 import type { GameState, PlayerState } from "./GameState";
@@ -165,7 +165,7 @@ export class GameEngine {
     this.state.lastSuccessfulSeat = seat;
     this.state.consecutivePasses = 0;
     this.state.lastPassSeat = null;
-    this.state.logs.push(`P${seat} 出 ${result.type}`);
+    this.state.logs.push(`P${seat} 出 ${result.type}:${result.cards.map(cardLabel).join(" ")}`);
     if (player.hand.length === 0) {
       this.state.phase = "HAND_FINISHED";
       this.state.handWinnerSeat = seat;
