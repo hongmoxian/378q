@@ -43,13 +43,16 @@ function allLegalCombos(hand: Card[]): PlayAction[] {
     }
   }
   const q873: Card[][] = [];
+  let hasAllQ873 = true;
   for (const rank of ["Q", "8", "7", "3"] as const) {
     const cards = byRank.get(rank) ?? [];
-    if (!cards.length) return result;
+    if (!cards.length) { hasAllQ873 = false; break; }
     q873.push(cards);
   }
-  for (const candidate of q873[0].flatMap((q) => q873[1].flatMap((eight) => q873[2].flatMap((seven) => q873[3].map((three) => [q, eight, seven, three]))))) {
-    addAction(result, candidate);
+  if (hasAllQ873) {
+    for (const candidate of q873[0].flatMap((q) => q873[1].flatMap((eight) => q873[2].flatMap((seven) => q873[3].map((three) => [q, eight, seven, three]))))) {
+      addAction(result, candidate);
+    }
   }
   return result;
 }

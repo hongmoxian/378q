@@ -78,7 +78,7 @@ function teammatePassed(state: GameState, seat: number): boolean {
  * 考虑三个因素:
  * 1. 牌型等级——基础惩罚顺378Q(800)> 氢弹(500)> 378Q(250)> 炸弹(120),
  *    同样能压住时 AI 总选代价最小的一种,大招留给关键时刻;
- * 2. 开局阶段——手牌 >= 14 张(开局/前中期)时惩罚 ×3:第一轮宁可 PASS 期待队友,
+ * 2. 开局阶段——手牌 >= 14 张(开局/前中期)时惩罚 ×1.5:略倾向留大招但能压就压,
  *    手牌 <= 6 张(收尾)时惩罚 ×0.6:该出手就出手;
  * 3. 队友状态——队友尚未 PASS(+300):队友可能还能接,自己先别抢大招。
  * 敌方已出炸弹级牌(stake > 10)时不罚:敌大招我方必须跟上,否则跑分。
@@ -99,7 +99,7 @@ function wastePenalty(comboType: ComboType, state: GameState, seat: number, urge
   if (stake > 10) return 0;
   const handSize = state.players[seat]?.hand.length ?? 0;
   let penalty = base;
-  if (handSize >= 14) penalty = Math.round(penalty * 3);
+  if (handSize >= 14) penalty = Math.round(penalty * 1.5);
   else if (handSize <= 6) penalty = Math.round(penalty * 0.6);
   if (!teammatePassed(state, seat)) penalty += 300;
   return penalty;
