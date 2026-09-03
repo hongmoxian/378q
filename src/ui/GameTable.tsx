@@ -6,6 +6,7 @@ import { classifyCombo } from "../rules/combo";
 import { speakCombo, speakPass, speakBeatOrCombo, speakLowCards, isMuted, setMuted } from "../voice";
 import { randomProfiles, type PlayerProfile } from "./profiles";
 import { recordPlayerBeat, recordPlayerBigPlay } from "../ai/learnFromPlayer";
+import { planHand } from "../ai/handPlan";
 import { getComboStake } from "../rules/combo";
 
 const engine = new GameEngine();
@@ -34,11 +35,14 @@ function CardFace({ card }: { card: Card }) {
   return <span className={`card-face-joker ${card.rank === "BIG_JOKER" ? "red-suit" : ""}`}>{card.rank === "BIG_JOKER" ? "大王" : "小王"}</span>;
 }
 
-/** 横排手牌展示行:名字 + 两个功能区(重点牌组/其他牌),同点数聚在一起,与玩家手牌区同款布局 */
+/** 横排手牌展示行:名字 + 功能牌区(按 AI 规划:顺378Q/氢弹/炸弹)+ 剩余散牌区,同点数聚在一起 */
 function CardRow({ profile, controller, team, cards, highlight }: { profile: PlayerProfile; controller: string; team: string; cards: Card[]; highlight?: boolean }) {
+  const plan = useMemo(() => planHand(cards), [cards]);
+  const functions = [...plan.entries].sort((a, b) => b.score - a.score);
+  const usedIds = plan.usedIds;
   const byIndex = (a: Card, b: Card) => RANK_ORDER.indexOf(a.rank as PlayableRank) - RANK_ORDER.indexOf(b.rank as PlayableRank);
-  const priority = cards.filter((card) => PRIORITY_RANKS.includes(card.rank as PlayableRank)).sort(byIndex);
-  const others = cards.filter((card) => !PRIORITY_RANKS.includes(card.rank as PlayableRank)).sort(byIndex);
+  const leftovers = cards.filter((card) => !usedIds.has(card.id)).sort(byIndex);
+  const zoneLabel: Record<string, string> = { Q873_SUITED: "顺378Q", Q873_MIXED: "378Q", HYDROGEN: "氢弹", BOMB: "炸弹" };
   return (
     <div className={`card-row ${highlight ? "row-active" : ""}`}>
       <div className="card-row-title">
@@ -46,16 +50,16 @@ function CardRow({ profile, controller, team, cards, highlight }: { profile: Pla
         <span>{team === "RED" ? "红队" : "蓝队"} · {cards.length} 张</span>
       </div>
       <div className="card-row-zones">
-        {priority.length > 0 && (
+        {functions.length > 0 && (
           <div className="card-row-zone">
-            <em>重点 3·7·8·Q</em>
-            <div className="card-row-cards">{priority.map((card) => <span className="mini-card" key={card.id}><CardFace card={card} /></span>)}</div>
+            <em>功能牌</em>
+            <div className="card-row-cards">{functions.map((entry, entryIndex) => <span className={`plan-group ${entry.kind === "BOMB" ? "bomb" : "big"}`} key={entryIndex} title={`${zoneLabel[entry.kind]} 隐藏分 ${entry.score}`}>{entry.cards.map((card) => <span className="mini-card" key={card.id}><CardFace card={card} /></span>)}</span>)}</div>
           </div>
         )}
-        {others.length > 0 && (
+        {leftovers.length > 0 && (
           <div className="card-row-zone">
-            <em>其他牌</em>
-            <div className="card-row-cards">{others.map((card) => <span className="mini-card" key={card.id}><CardFace card={card} /></span>)}</div>
+            <em>剩余牌</em>
+            <div className="card-row-cards">{leftovers.map((card) => <span className="mini-card" key={card.id}><CardFace card={card} /></span>)}</div>
           </div>
         )}
       </div>

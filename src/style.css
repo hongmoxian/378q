@@ -96,6 +96,9 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .card-row.row-active .card-row-title b { color: #f2c667; }
 .card-row-cards { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; }
 .card-row-cards .mini-card { width: 47px; height: 64px; }
+.plan-group { display: inline-flex; gap: 3px; padding: 2px 4px; border-radius: 5px; }
+.plan-group.big { background: #f2c6671c; border: 1px solid #f2c66755; }
+.plan-group.bomb { background: #ff8c1a1c; border: 1px solid #ff8c1a55; }
 .card-row-zones { display: flex; flex-direction: column; gap: 6px; flex: 1; }
 .card-row-zone { display: flex; align-items: center; gap: 10px; }
 .card-row-zone em { font-style: normal; min-width: 86px; color: #8fa9ad; font-size: 11px; }
