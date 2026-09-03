@@ -96,6 +96,10 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .card-row.row-active .card-row-title b { color: #f2c667; }
 .card-row-cards { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; }
 .card-row-cards .mini-card { width: 47px; height: 64px; }
+.card-row-zones { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.card-row-zone { display: flex; align-items: center; gap: 10px; }
+.card-row-zone em { font-style: normal; min-width: 86px; color: #8fa9ad; font-size: 11px; }
+.card-row:first-child .card-row-zone:first-child em, .card-row-zone:first-child em { color: #f2c667; }
 .reveal-cards { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; max-width: 230px; justify-content: center; }
 .reveal-cards .mini-card { font-size: 10px; padding: 2px 5px; animation: card-in .35s both; }
 @media (max-width: 700px) { main { padding: 16px; } .sub { display: block; margin: 4px 0 0; font-size: 12px; } .score { gap: 8px; flex-wrap: wrap; } .score > div { min-width: 0; } .round { order: 3; width: 100%; } .table { min-height: 330px; } .hand-groups { grid-template-columns: 1fr; gap: 10px; } .card { width: 53px; min-width: 53px; height: 71px; } .seat-info span { display: none; } }

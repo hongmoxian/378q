@@ -34,15 +34,31 @@ function CardFace({ card }: { card: Card }) {
   return <span className={`card-face-joker ${card.rank === "BIG_JOKER" ? "red-suit" : ""}`}>{card.rank === "BIG_JOKER" ? "大王" : "小王"}</span>;
 }
 
-/** 横排手牌展示行:名字 + 一整行牌(可换行),用于查看队友牌与结算亮牌 */
+/** 横排手牌展示行:名字 + 两个功能区(重点牌组/其他牌),同点数聚在一起,与玩家手牌区同款布局 */
 function CardRow({ profile, controller, team, cards, highlight }: { profile: PlayerProfile; controller: string; team: string; cards: Card[]; highlight?: boolean }) {
+  const byIndex = (a: Card, b: Card) => RANK_ORDER.indexOf(a.rank as PlayableRank) - RANK_ORDER.indexOf(b.rank as PlayableRank);
+  const priority = cards.filter((card) => PRIORITY_RANKS.includes(card.rank as PlayableRank)).sort(byIndex);
+  const others = cards.filter((card) => !PRIORITY_RANKS.includes(card.rank as PlayableRank)).sort(byIndex);
   return (
     <div className={`card-row ${highlight ? "row-active" : ""}`}>
       <div className="card-row-title">
         <b>{profile.name}{controller === "HUMAN" ? "(你)" : ""}</b>
         <span>{team === "RED" ? "红队" : "蓝队"} · {cards.length} 张</span>
       </div>
-      <div className="card-row-cards">{cards.map((card) => <span className="mini-card" key={card.id}><CardFace card={card} /></span>)}</div>
+      <div className="card-row-zones">
+        {priority.length > 0 && (
+          <div className="card-row-zone">
+            <em>重点 3·7·8·Q</em>
+            <div className="card-row-cards">{priority.map((card) => <span className="mini-card" key={card.id}><CardFace card={card} /></span>)}</div>
+          </div>
+        )}
+        {others.length > 0 && (
+          <div className="card-row-zone">
+            <em>其他牌</em>
+            <div className="card-row-cards">{others.map((card) => <span className="mini-card" key={card.id}><CardFace card={card} /></span>)}</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
