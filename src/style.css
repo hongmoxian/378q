@@ -78,6 +78,7 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .countdown-overlay { position: absolute; inset: 0; z-index: 7; display: grid; place-items: center; background: rgba(6, 10, 22, .5); border-radius: 14px; pointer-events: none; }
 .countdown-overlay .count-num { font-size: 104px; font-weight: 900; color: #f2c667; text-shadow: 0 0 34px #b45309, 0 0 90px #f2c66766; animation: count-pop 1s ease-out both; }
 .countdown-overlay small { position: absolute; bottom: 24%; color: #cbd5e1; font-size: 13px; letter-spacing: 1px; }
+.hint-text { display: block; margin-top: 6px; color: #f2c667; font-size: 12px; font-style: normal; animation: card-in .3s ease-out both; }
 .seat.revealing { box-shadow: 0 0 0 2px #f2c667, 0 0 22px #f2c66755; }
 .seat { pointer-events: auto; }
 .hover-cards { position: absolute; top: calc(100% + 10px); left: 50%; transform: translateX(-50%); z-index: 20; display: flex; flex-wrap: wrap; gap: 4px; max-width: 320px; padding: 8px; border: 1px solid #f2c66788; border-radius: 8px; background: #0d1f26f2; box-shadow: 0 10px 26px #000a; opacity: 0; pointer-events: none; transition: opacity .15s; }

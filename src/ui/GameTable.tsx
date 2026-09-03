@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GameEngine } from "../engine/GameEngine";
-import { playAI, hintCardIds } from "../ai/GreedyAI";
+import { playAI, hintInfo } from "../ai/GreedyAI";
 import type { Card, PlayableRank } from "../rules/cards";
 import { classifyCombo } from "../rules/combo";
 import { speakCombo, speakPass, speakBeatOrCombo, speakLowCards, isMuted, setMuted } from "../voice";
@@ -94,6 +94,7 @@ export default function GameTable() {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [revealing, setRevealing] = useState(false);
   const [peek, setPeek] = useState(false);
+  const [hintText, setHintText] = useState("");
   const [profiles, setProfiles] = useState<PlayerProfile[]>(() => randomProfiles());
   const human = state.players[0];
   const lastComboKey = useRef("");
@@ -212,9 +213,10 @@ export default function GameTable() {
   };
   const useLuck = () => { if (perform(() => engine.useLuckCard(0))) setCountdown(3); };
   const showHint = () => {
-    const ids = hintCardIds(engine, 0);
-    if (!ids) { alert("没有能压住的牌,建议点「不管」"); return; }
-    setSelected(ids);
+    const hint = hintInfo(engine, 0);
+    if (!hint.cardIds) { setHintText(hint.reason); alert(hint.reason); return; }
+    setSelected(hint.cardIds);
+    setHintText(hint.reason);
   };
   const restart = () => { engine.startNewMatch(); setSelected([]); setProfiles(randomProfiles()); refresh((value) => value + 1); };
   const toggleMute = () => { const next = !muted; setMuted(next); setMutedState(next); };
@@ -240,6 +242,7 @@ export default function GameTable() {
           {currentCards.length > 0 && <div className="played-cards">{currentCards.map((card, index) => <span className="mini-card" key={card.id} style={{ animationDelay: `${index * 60}ms` }}><CardFace card={card} /></span>)}</div>}
           <small>{state.currentCombo ? `P${state.comboOwnerSeat} 出牌` : "领牌阶段只能出单张或对子"}</small>
           {aiThinking && countdown === null && <em className="thinking">AI 思考中…</em>}
+          {hintText && state.currentTurn === 0 && <em className="hint-text">💡 {hintText}</em>}
         </div>
         {countdown !== null && (
           <div className="countdown-overlay" key={`${state.handNumber}-${countdown}`}>
