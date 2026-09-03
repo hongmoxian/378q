@@ -3,6 +3,7 @@ import type { GameState } from "../engine/GameState";
 import { classifyCombo, getComboStake } from "../rules/combo";
 import { COMBO_TIER } from "../rules/ruleConfig";
 import { getRankPower } from "../rules/ranks";
+import { PLAYABLE_RANKS, type PlayableRank } from "../rules/cards";
 import { planLoss } from "./handPlan";
 import { playerAggressiveness } from "./learnFromPlayer";
 
@@ -79,6 +80,14 @@ export function actionScore(action: PlayAction, state: GameState, seat: number):
   // 敌方出单/对时,用整块炸弹接管(+夺权后可自由领牌):奖励
   const incomingSmall = state.currentCombo !== null && (state.currentCombo.type === "PAIR" || state.currentCombo.type === "SINGLE");
   if (incomingSmall && combo.type === "BOMB_WITH_PAIR") score += 600;
+  // 炸弹带队对优先选小对子(例:手上有对9和对J,带对9):大牌
+  if (combo.type === "BOMB_WITH_PAIR" && combo.rank !== undefined) {
+    const playedIds = new Set(cards.map((card) => card.id));
+    const escortPower = Math.max(...cards.filter((card) => card.rank !== combo.rank).map((card) => getRankPower(card.rank as PlayableRank)));
+    const bodyRank = combo.rank;
+    const smallerPairExists = PLAYABLE_RANKS.some((rank) => getRankPower(rank) < escortPower && player.hand.filter((card) => card.rank === rank && !playedIds.has(card.id)).length >= 2);
+    if (smallerPairExists) score -= 80;
+  }
   if (teammatePassed(state, seat)) score += 600;
   if (urgent) score += 900;
   if (state.comboOwnerSeat !== null && state.players[state.comboOwnerSeat].team === player.team) score -= 800;
