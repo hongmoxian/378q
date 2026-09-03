@@ -69,6 +69,12 @@ export function actionScore(action: PlayAction, state: GameState, seat: number):
   let score = 1_000 - tier * 100 - rankPower * 10 + combo.cards.length * 3;
   score -= Math.round(loss * painFactor);
   if (loss === 0) score += 25;
+  // 拆功能牌去打防守型单/对(如抽炸弹里的对子管对子):重罚,宁可整块出
+  const defensiveBreak = loss > 0 && (combo.type === "PAIR" || combo.type === "SINGLE");
+  if (defensiveBreak) score -= 400;
+  // 敌方出单/对时,用整块炸弹接管(+夺权后可自由领牌):奖励
+  const incomingSmall = state.currentCombo !== null && (state.currentCombo.type === "PAIR" || state.currentCombo.type === "SINGLE");
+  if (incomingSmall && combo.type === "BOMB_WITH_PAIR") score += 600;
   if (teammatePassed(state, seat)) score += 600;
   if (urgent) score += 900;
   if (state.comboOwnerSeat !== null && state.players[state.comboOwnerSeat].team === player.team) score -= 800;
