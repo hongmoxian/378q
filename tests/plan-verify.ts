@@ -1,6 +1,7 @@
+import type { Card, Rank } from "../src/rules/cards";
 import { planHand } from "../src/ai/handPlan";
 
-const card = (rank: string, index: number, suit: "SPADE" | "HEART" | "CLUB" | "DIAMOND") =>
+const card = (rank: Rank, index: number, suit: "SPADE" | "HEART" | "CLUB" | "DIAMOND"): Card =>
   ({ id: `${rank}${index}`, deck: 0 as const, rank, suit, category: "PLAYABLE" as const });
 
 function show(name: string, hand: ReturnType<typeof card>[]) {
