@@ -72,6 +72,10 @@ export function actionScore(action: PlayAction, state: GameState, seat: number):
   // 拆功能牌去打防守型单/对(如抽炸弹里的对子管对子):重罚,宁可整块出
   const defensiveBreak = loss > 0 && (combo.type === "PAIR" || combo.type === "SINGLE");
   if (defensiveBreak) score -= 400;
+  // 氢弹拆用降级(出"炸弹"却吞掉了完整氢弹):几乎永远是坏棋——
+  // 要么不管(氢弹留着管更大的牌),要么直接出完整氢弹接管。紧急时刻例外(救命优先)。
+  const hydroBreak = combo.type === "BOMB_WITH_PAIR" && loss >= 800;
+  if (hydroBreak && !urgent) score -= 700;
   // 敌方出单/对时,用整块炸弹接管(+夺权后可自由领牌):奖励
   const incomingSmall = state.currentCombo !== null && (state.currentCombo.type === "PAIR" || state.currentCombo.type === "SINGLE");
   if (incomingSmall && combo.type === "BOMB_WITH_PAIR") score += 600;
