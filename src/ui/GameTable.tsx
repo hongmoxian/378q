@@ -34,6 +34,19 @@ function CardFace({ card }: { card: Card }) {
   return <span className={`card-face-joker ${card.rank === "BIG_JOKER" ? "red-suit" : ""}`}>{card.rank === "BIG_JOKER" ? "大王" : "小王"}</span>;
 }
 
+/** 横排手牌展示行:名字 + 一整行牌(可换行),用于查看队友牌与结算亮牌 */
+function CardRow({ profile, controller, team, cards, highlight }: { profile: PlayerProfile; controller: string; team: string; cards: Card[]; highlight?: boolean }) {
+  return (
+    <div className={`card-row ${highlight ? "row-active" : ""}`}>
+      <div className="card-row-title">
+        <b>{profile.name}{controller === "HUMAN" ? "(你)" : ""}</b>
+        <span>{team === "RED" ? "红队" : "蓝队"} · {cards.length} 张</span>
+      </div>
+      <div className="card-row-cards">{cards.map((card) => <span className="mini-card" key={card.id}><CardFace card={card} /></span>)}</div>
+    </div>
+  );
+}
+
 type FxKind = "bomb" | "hydrogen" | "q873" | "suited";
 const FX_TEXT: Record<FxKind, string> = { bomb: "炸弹!", hydrogen: "氢弹!!", q873: "378 夺!", suited: "顺 378 夺!" };
 const FX_RINGS: Record<FxKind, number> = { bomb: 1, hydrogen: 3, q873: 2, suited: 3 };
@@ -60,6 +73,7 @@ export default function GameTable() {
   const [muted, setMutedState] = useState(isMuted());
   const [countdown, setCountdown] = useState<number | null>(null);
   const [revealing, setRevealing] = useState(false);
+  const [peek, setPeek] = useState(false);
   const [profiles, setProfiles] = useState<PlayerProfile[]>(() => randomProfiles());
   const human = state.players[0];
   const lastComboKey = useRef("");
@@ -219,15 +233,28 @@ export default function GameTable() {
             <span>{FX_TEXT[fx.kind]}</span>
           </div>
         )}
-        <div className="seats">{state.players.map((player) => { const profile = profiles[player.seat]!; const hoverable = settled && player.controller !== "HUMAN" && player.hand.length > 0; return <div className={`seat seat-${player.seat} ${state.currentTurn === player.seat ? "active" : ""} ${revealing && player.hand.length > 0 ? "revealing" : ""}`} key={player.seat}><div className="avatar"><img src={profile.avatar} alt={profile.name} /><i className="seat-badge">{player.seat}</i></div><div className="seat-info"><b>{profile.name}{player.controller === "HUMAN" ? "（你）" : ""}</b><span>{player.controller === "HUMAN" ? "你" : "AI"} · {player.hand.length} 张</span></div>{revealing && player.hand.length > 0 && <div className="reveal-cards">{player.hand.map((card) => <span className="mini-card" key={card.id}><CardFace card={card} /></span>)}</div>}{hoverable && <div className="hover-cards">{player.hand.map((card) => <span className="mini-card" key={card.id}><CardFace card={card} /></span>)}</div>}</div>; })}</div>
+        <div className="seats">{state.players.map((player) => { const profile = profiles[player.seat]!; const hoverable = settled && player.controller !== "HUMAN" && player.hand.length > 0; const ally = player.seat === 0 || player.team === human.team; return <div className={`seat seat-${player.seat} ${state.currentTurn === player.seat ? "active" : ""} ${revealing && player.hand.length > 0 ? "revealing" : ""}`} key={player.seat}><div className="avatar"><img src={profile.avatar} alt={profile.name} /><i className="seat-badge">{player.seat}</i></div><div className="seat-info"><b>{profile.name}{player.controller === "HUMAN" ? "（你）" : ""}</b><em className={`tag ${ally ? "ally" : "enemy"}`}>{player.controller === "HUMAN" ? "自己" : ally ? "队友" : "敌人"}</em><span>{player.hand.length} 张</span></div>{hoverable && <div className="hover-cards">{player.hand.map((card) => <span className="mini-card" key={card.id}><CardFace card={card} /></span>)}</div>}</div>; })}</div>
       </section>
+      {peek && (() => {
+        const teammate = state.players.find((player) => player.seat !== 0 && player.team === human.team)!;
+        return (
+          <section className="peek-board">
+            <CardRow profile={profiles[teammate.seat]!} controller={teammate.controller} team={teammate.team} cards={teammate.hand} highlight={state.currentTurn === teammate.seat} />
+          </section>
+        );
+      })()}
+      {settled && (
+        <section className="peek-board">
+          {state.players.map((player) => <CardRow profile={profiles[player.seat]!} controller={player.controller} team={player.team} cards={player.hand} highlight={player.seat === state.handWinnerSeat} key={player.seat} />)}
+        </section>
+      )}
       <section className="hand">
         <div className="hand-title"><span>你的手牌</span><span>{human.hand.length} 张</span></div>
         <div className="hand-groups deal" key={`${state.handNumber}-${3 - state.luckCardUses}`}>
           <div className="hand-group"><div className="group-title">重点牌组 <span>3 · 7 · 8 · Q</span></div><div className="cards">{groups.priority.flatMap((group) => group.cards).map((card, index) => <CardButton card={card} selected={selected.includes(card.id)} onClick={toggle} dealDelay={index * 45} key={card.id} />)}</div></div>
           <div className="hand-group"><div className="group-title">其他牌</div><div className="cards">{groups.other.flatMap((group) => group.cards).map((card, index) => <CardButton card={card} selected={selected.includes(card.id)} onClick={toggle} dealDelay={index * 45} key={card.id} />)}</div></div>
         </div>
-        <div className="actions"><button className="primary" disabled={countdown !== null || state.currentTurn !== 0 || selected.length === 0 || state.phase !== "PLAYING"} onClick={playHuman}>出牌</button><button disabled={countdown !== null || state.currentTurn !== 0 || !state.currentCombo || state.phase !== "PLAYING"} onClick={passHuman}>不管</button><button disabled={countdown !== null || state.currentTurn !== 0 || state.phase !== "PLAYING"} onClick={showHint}>💡 提示</button>{state.phase === "PLAYING" && state.handNumber > 1 && state.luckCardUses > 0 && state.currentCombo === null && state.comboOwnerSeat === null && state.consecutivePasses === 0 && <button onClick={useLuck}>🎴 手气卡 ×{state.luckCardUses}</button>}{state.phase === "HAND_FINISHED" && <button disabled={revealing} onClick={() => perform(() => engine.startNextHand())}>{revealing ? "亮牌中…" : "下一小局"}</button>}{state.phase === "MATCH_FINISHED" && <strong className="winner">大局结束：{state.winnerTeam === "RED" ? "红队" : "蓝队"}获胜</strong>}</div>
+        <div className="actions"><button className="primary" disabled={countdown !== null || state.currentTurn !== 0 || selected.length === 0 || state.phase !== "PLAYING"} onClick={playHuman}>出牌</button><button disabled={countdown !== null || state.currentTurn !== 0 || !state.currentCombo || state.phase !== "PLAYING"} onClick={passHuman}>不管</button><button disabled={countdown !== null || state.currentTurn !== 0 || state.phase !== "PLAYING"} onClick={showHint}>💡 提示</button><button className={peek ? "primary" : ""} onClick={() => setPeek((value) => !value)}>{peek ? "👁 收起队友牌" : "👁 看队友牌"}</button>{state.phase === "PLAYING" && state.handNumber > 1 && state.luckCardUses > 0 && state.currentCombo === null && state.comboOwnerSeat === null && state.consecutivePasses === 0 && <button onClick={useLuck}>🎴 手气卡 ×{state.luckCardUses}</button>}{state.phase === "HAND_FINISHED" && <button disabled={revealing} onClick={() => perform(() => engine.startNextHand())}>{revealing ? "亮牌中…" : "下一小局"}</button>}{state.phase === "MATCH_FINISHED" && <strong className="winner">大局结束：{state.winnerTeam === "RED" ? "红队" : "蓝队"}获胜</strong>}</div>
       </section>
       <section className="logs">{state.logs.slice(-8).map((log, index) => <div key={`${index}-${log}`}>{log}</div>)}</section>
     </main>

@@ -84,6 +84,18 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .seat:hover .hover-cards { opacity: 1; }
 .seat-1 .hover-cards { left: auto; right: 0; transform: none; }
 .seat-3 .hover-cards { left: 0; right: auto; transform: none; }
+.tag { font-style: normal; font-size: 10px; line-height: 1; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
+.tag.ally { color: #7ee2a8; border: 1px solid #7ee2a888; background: #7ee2a815; }
+.tag.enemy { color: #ff9d9d; border: 1px solid #ff9d9d88; background: #ff9d9d15; }
+.peek-board { width: 100%; max-width: 1100px; margin: 0 auto 10px; padding: 10px 14px; border: 1px solid #3a5160; border-radius: 10px; background: #10262d; animation: card-in .35s ease-out both; }
+.card-row { display: flex; align-items: center; gap: 14px; padding: 6px 0; }
+.card-row + .card-row { border-top: 1px dashed #2a4149; }
+.card-row-title { min-width: 150px; display: flex; flex-direction: column; gap: 3px; }
+.card-row-title b { color: #e8f1ef; font-size: 14px; }
+.card-row-title span { color: #9db1b4; font-size: 12px; }
+.card-row.row-active .card-row-title b { color: #f2c667; }
+.card-row-cards { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; }
+.card-row-cards .mini-card { width: 47px; height: 64px; }
 .reveal-cards { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; max-width: 230px; justify-content: center; }
 .reveal-cards .mini-card { font-size: 10px; padding: 2px 5px; animation: card-in .35s both; }
 @media (max-width: 700px) { main { padding: 16px; } .sub { display: block; margin: 4px 0 0; font-size: 12px; } .score { gap: 8px; flex-wrap: wrap; } .score > div { min-width: 0; } .round { order: 3; width: 100%; } .table { min-height: 330px; } .hand-groups { grid-template-columns: 1fr; gap: 10px; } .card { width: 53px; min-width: 53px; height: 71px; } .seat-info span { display: none; } }
