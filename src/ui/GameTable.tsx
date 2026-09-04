@@ -8,6 +8,7 @@ import { randomProfiles, type PlayerProfile } from "./profiles";
 import { recordPlayerBeat, recordPlayerBigPlay } from "../ai/learnFromPlayer";
 import { planHand } from "../ai/handPlan";
 import { getComboStake } from "../rules/combo";
+import { toggleMusic, isMusicOn } from "../audio/bgm";
 
 const engine = new GameEngine();
 const PRIORITY_RANKS: readonly PlayableRank[] = ["3", "7", "8", "Q"];
@@ -95,6 +96,7 @@ export default function GameTable() {
   const [revealing, setRevealing] = useState(false);
   const [peek, setPeek] = useState(false);
   const [hintText, setHintText] = useState("");
+  const [musicOn, setMusicOnState] = useState(isMusicOn());
   const [profiles, setProfiles] = useState<PlayerProfile[]>(() => randomProfiles());
   const human = state.players[0];
   const lastComboKey = useRef("");
@@ -220,6 +222,7 @@ export default function GameTable() {
   };
   const restart = () => { engine.startNewMatch(); setSelected([]); setProfiles(randomProfiles()); refresh((value) => value + 1); };
   const toggleMute = () => { const next = !muted; setMuted(next); setMutedState(next); };
+  const toggleMusicBtn = () => setMusicOnState(toggleMusic());
   const currentCards = state.currentCombo?.cards ?? [];
   const comboName: Record<string, string> = { SINGLE: "单张", PAIR: "对子", BOMB_WITH_PAIR: "炸弹", HYDROGEN_BOMB: "氢弹", Q873_MIXED: "378Q", Q873_SUITED: "顺378Q" };
   const formatLog = (log: string) => log
@@ -231,7 +234,7 @@ export default function GameTable() {
 
   return (
     <main>
-      <header><div><span className="brand">378Q</span><span className="sub">四人对家组队牌类游戏</span></div><div className="header-btns"><button onClick={toggleMute}>{muted ? "🔇 语音关" : "🔊 语音开"}</button><button onClick={restart}>新局</button></div></header>
+      <header><div><span className="brand">378Q</span><span className="sub">四人对家组队牌类游戏</span></div><div className="header-btns"><button onClick={toggleMute}>{muted ? "🔇 语音关" : "🔊 语音开"}</button><button onClick={toggleMusicBtn}>{musicOn ? "🎵 音乐开" : "🎵 音乐关"}</button><button onClick={restart}>新局</button></div></header>
       <section className="score"><div className="red"><span>红队</span><b>{state.teamScores.RED}</b></div><div className="round">第 {state.handNumber} 小局 · 庄家 P{state.dealerSeat} · 当前 P{state.currentTurn}</div><div className="blue"><span>蓝队</span><b>{state.teamScores.BLUE}</b></div></section>
       {settled && (
         <section className="settlement">
