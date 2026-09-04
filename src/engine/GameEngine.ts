@@ -60,6 +60,7 @@ export class GameEngine {
       lastSuccessfulSeat: null,
       consecutivePasses: 0,
       pendingPasses: [],
+      handPlays: [],
       luckCardUses: 3,
       winnerTeam: null,
       handWinnerSeat: null,
@@ -105,6 +106,7 @@ export class GameEngine {
     this.state.lastSuccessfulSeat = null;
     this.state.consecutivePasses = 0;
     this.state.pendingPasses = [];
+    this.state.handPlays = [];
     this.state.luckCardUses = 3;
     this.state.handWinnerSeat = null;
     this.state.phase = "PLAYING";
@@ -165,6 +167,7 @@ export class GameEngine {
     this.state.lastSuccessfulSeat = seat;
     this.state.consecutivePasses = 0;
     this.state.pendingPasses = [];
+    this.state.handPlays.push({ seat: seat as 0 | 1 | 2 | 3, type: result.type, stake: getComboStake(result) });
     this.state.logs.push(`P${seat} 出 ${result.type}:${result.cards.map(cardLabel).join(" ")}`);
     if (player.hand.length === 0) {
       this.state.phase = "HAND_FINISHED";
