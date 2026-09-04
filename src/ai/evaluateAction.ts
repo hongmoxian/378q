@@ -20,14 +20,15 @@ function opponentPressure(state: GameState, seat: number): number {
   return min;
 }
 
-/** 队友(对家)在本轮已 PASS,且当前牌由敌方持有:队友接不了,该自己顶上。 */
+/** 本轮队友(对家)已 PASS 且当前牌由敌方持有:队友接不了,该自己顶上。 */
 function teammatePassed(state: GameState, seat: number): boolean {
-  if (state.lastPassSeat === null || state.comboOwnerSeat === null) return false;
-  if (state.lastPassSeat === seat) return false;
-  const teammate = state.players[state.lastPassSeat];
-  const owner = state.players[state.comboOwnerSeat];
-  if (!teammate || !owner) return false;
-  return teammate.team === state.players[seat].team && owner.team !== state.players[seat].team;
+  const myTeam = state.players[seat]?.team;
+  const owner = state.comboOwnerSeat !== null ? state.players[state.comboOwnerSeat] : null;
+  if (!myTeam || !owner || owner.team === myTeam) return false;
+  return state.pendingPasses.some((pending) => {
+    const passer = state.players[pending.seat]!;
+    return passer.team === myTeam && pending.seat !== seat;
+  });
 }
 
 /**

@@ -59,7 +59,7 @@ export class GameEngine {
       comboOwnerSeat: null,
       lastSuccessfulSeat: null,
       consecutivePasses: 0,
-      lastPassSeat: null,
+      pendingPasses: [],
       luckCardUses: 3,
       winnerTeam: null,
       handWinnerSeat: null,
@@ -104,7 +104,7 @@ export class GameEngine {
     this.state.comboOwnerSeat = null;
     this.state.lastSuccessfulSeat = null;
     this.state.consecutivePasses = 0;
-    this.state.lastPassSeat = null;
+    this.state.pendingPasses = [];
     this.state.luckCardUses = 3;
     this.state.handWinnerSeat = null;
     this.state.phase = "PLAYING";
@@ -164,7 +164,7 @@ export class GameEngine {
     this.state.comboOwnerSeat = seat;
     this.state.lastSuccessfulSeat = seat;
     this.state.consecutivePasses = 0;
-    this.state.lastPassSeat = null;
+    this.state.pendingPasses = [];
     this.state.logs.push(`P${seat} 出 ${result.type}:${result.cards.map(cardLabel).join(" ")}`);
     if (player.hand.length === 0) {
       this.state.phase = "HAND_FINISHED";
@@ -176,20 +176,25 @@ export class GameEngine {
     assertState(this.state);
   }
 
+  /**
+   * 不管:不再即时扣分,只记录;结算时机:
+   * - 本轮内有人接管出牌 → 之前的不管全部免扣;
+   * - 连续三次不管(轮次结束,无人接管)→ 每支队伍只扣一次(不叠加)。
+   */
   pass(seat: number): void {
     const player = this.requireTurn(seat);
     if (!this.state.currentCombo || this.state.comboOwnerSeat === null) throw new Error("cannot pass while leading");
-    const owner = this.state.players[this.state.comboOwnerSeat];
-    if (player.team !== owner.team) this.state.teamScores = transferScore(this.state.teamScores, player.team, getComboStake(this.state.currentCombo));
-    this.state.logs.push(player.team === owner.team ? `P${seat} 不管（队友，不扣分）` : `P${seat} 不管，${player.team} -${getComboStake(this.state.currentCombo)}`);
-    if (this.state.teamScores.RED < -200 || this.state.teamScores.BLUE < -200) {
-      this.state.phase = "MATCH_FINISHED";
-      this.state.winnerTeam = this.state.teamScores.RED < -200 ? "BLUE" : "RED";
-      return;
+    const owner = this.state.players[this.state.comboOwnerSeat]!;
+    if (player.team === owner.team) {
+      this.state.logs.push(`P${seat} 不管（队友，不扣分）`);
+    } else {
+      this.state.pendingPasses.push({ seat: seat as 0 | 1 | 2 | 3, stake: getComboStake(this.state.currentCombo) });
+      this.state.logs.push(`P${seat} 不管`);
     }
     this.state.consecutivePasses += 1;
-    this.state.lastPassSeat = seat;
     if (this.state.consecutivePasses >= 3) {
+      this.settlePendingPasses();
+      if (this.state.phase === "MATCH_FINISHED") return;
       this.state.currentTurn = this.state.comboOwnerSeat;
       this.state.currentCombo = null;
       this.state.comboOwnerSeat = null;
@@ -198,6 +203,31 @@ export class GameEngine {
       this.state.currentTurn = (seat + 1) % 4;
     }
     assertState(this.state);
+  }
+
+  /** 轮次结束结算:按队伍去重,每队只扣一次本轮记录的最高 stake。 */
+  private settlePendingPasses(): void {
+    const ownerSeat = this.state.comboOwnerSeat;
+    this.state.pendingPasses = this.state.pendingPasses.filter((pending) => {
+      const passer = this.state.players[pending.seat]!;
+      const owner = ownerSeat !== null ? this.state.players[ownerSeat] : null;
+      return owner !== null && passer.team !== owner.team;
+    });
+    if (!this.state.pendingPasses.length) return;
+    const owed = new Map<Team, number>();
+    for (const pending of this.state.pendingPasses) {
+      const team = this.state.players[pending.seat]!.team;
+      owed.set(team, Math.max(owed.get(team) ?? 0, pending.stake));
+    }
+    for (const [team, amount] of owed) {
+      this.state.teamScores = transferScore(this.state.teamScores, team, amount);
+      this.state.logs.push(`${team} 连续不管，-${amount}`);
+    }
+    this.state.pendingPasses = [];
+    if (this.state.teamScores.RED < -200 || this.state.teamScores.BLUE < -200) {
+      this.state.phase = "MATCH_FINISHED";
+      this.state.winnerTeam = this.state.teamScores.RED < -200 ? "BLUE" : "RED";
+    }
   }
 
   isMatchFinished(): boolean { return this.state.phase === "MATCH_FINISHED"; }

@@ -86,10 +86,13 @@ export function hintInfo(engine: GameEngine, seat: number): HintInfo {
 }
 
 function teammatePassedNote(state: GameState, seat: number): boolean {
-  if (state.lastPassSeat === null || state.comboOwnerSeat === null) return false;
-  const teammate = state.players[state.lastPassSeat];
-  const owner = state.players[state.comboOwnerSeat];
-  return !!teammate && !!owner && teammate.team === state.players[seat].team && owner.team !== state.players[seat].team;
+  const myTeam = state.players[seat]?.team;
+  const owner = state.comboOwnerSeat !== null ? state.players[state.comboOwnerSeat] : null;
+  if (!myTeam || !owner || owner.team === myTeam) return false;
+  return state.pendingPasses.some((pending) => {
+    const passer = state.players[pending.seat]!;
+    return passer.team === myTeam && pending.seat !== seat;
+  });
 }
 
 // GameState 类型仅用于 teammatePassedNote 参数标注
